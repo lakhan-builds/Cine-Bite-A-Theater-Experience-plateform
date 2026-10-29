@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food & Snacks - BookMyShow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/food.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="../index.html" class="logo">Book<span>My</span>Show</a>
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="movies.html">Movies</a>
+            <a href="theaters.html">Theaters</a>
+            <a href="food.html" class="active food-nav-link">Food & Snacks</a>
+            <a href="bookings.html">My Bookings</a>
+            <a href="admin.html" class="admin-nav-link">Admin</a>
+        </div>
+        <div class="nav-user" id="nav-user"></div>
+    </nav>
+
+    <div class="container" style="padding-bottom: 7rem;">
+        <h2 class="section-title">Order Snacks To Your Seat 🍿</h2>
+
+        <!-- Active Booking Banner -->
+        <div id="booking-context-container">
+            <div class="loading-center"><div class="spinner"></div></div>
+        </div>
+
+        <!-- Food Catalog Grid -->
+        <div id="food-catalog-section" style="display:none;">
+            <div class="food-grid" id="food-grid"></div>
+        </div>
+    </div>
+
+    <!-- Sticky Cart Summary Bar -->
+  <div class="cart-bar" id="cart-bar" style="display:none;">
+        <div>
+            <div style="font-weight:700; font-size:1.1rem; color:var(--white);" id="cart-item-count">0 items added</div>
+            <div style="color:var(--success); font-weight:700; font-size:1.2rem;" id="cart-total-price">₹0</div>
+        </div>
+        <!-- THIS MUST CALL openCheckoutModal() -->
+        <button class="btn btn-primary" onclick="openCheckoutModal()">Proceed to Seat & Timing</button>
+    </div>
+
+    <!-- Delivery Modal -->
+    <div class="modal-overlay" id="checkout-modal">
+        <div class="modal" style="max-width:520px;">
+            <button class="modal-close" onclick="closeModal('checkout-modal')">&times;</button>
+            <h2>Seat & Delivery Timing 💺</h2>
+
+            <div class="form-group" style="margin-top:1rem;">
+                <label>Deliver to Seat (from your booking)</label>
+                <select id="seat-select"></select>
+            </div>
+
+            <div class="form-group">
+                <label>When would you like it delivered?</label>
+                <select id="delivery-time-select">
+                    <option value="In 20 mins">⚡ In 20 minutes</option>
+                    <option value="In 40 mins">🕐 In 40 minutes</option>
+                    <option value="In 1 hour">⏰ In 1 hour</option>
+                    <option value="During Intermission">🍿 During Intermission</option>
+                </select>
+            </div>
+
+            <div class="booking-summary" style="margin-top:1.5rem;">
+                <h3>Order Summary</h3>
+                <div id="order-summary-content"></div>
+            </div>
+
+            <!-- THIS TRIGGERS THE RAZORPAY PAYMENT -->
+            <button class="btn btn-primary btn-block" id="food-pay-btn" style="margin-top:1.5rem;" onclick="placeFoodOrder()">Pay & Confirm Order</button>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/food.js"></script>
+</body>
+</html>

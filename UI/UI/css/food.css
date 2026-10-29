@@ -1,0 +1,75 @@
+.food-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.food-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: var(--transition);
+}
+
+.food-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(233, 69, 96, 0.4);
+}
+
+.food-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: var(--bg-light);
+}
+
+.food-body {
+    padding: 1rem;
+    flex: 1;
+}
+
+.food-footer {
+    padding: 0.8rem 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.qty-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cart-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    padding: 1rem 2rem;
+    border-top: 2px solid var(--primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.booking-banner {
+    background: var(--bg-card);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    border-radius: var(--radius);
+    padding: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}

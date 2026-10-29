@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - BookMyShow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .admin-nav { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+        .admin-nav .tab-btn { padding: 0.5rem 1rem; border-radius: 6px; background: var(--bg-card); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; font-weight: 600; }
+        .admin-nav .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="../index.html" class="logo">Book<span>My</span>Show</a>
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="movies.html">Movies</a>
+            <a href="theaters.html">Theaters</a>
+            <a href="food.html" class="food-nav-link" style="display:none;">Food & Snacks</a>
+            <a href="bookings.html">My Bookings</a>
+            <a href="admin.html" class="active admin-nav-link">Admin</a>
+        </div>
+        <div class="nav-user" id="nav-user"></div>
+    </nav>
+
+    <div class="container" style="padding-top:2rem; padding-bottom:4rem;">
+        <h2 class="section-title">Admin Management Console 🛠️</h2>
+
+        <div class="admin-nav">
+            <button class="tab-btn active" onclick="switchAdminTab('cities')">Cities</button>
+            <button class="tab-btn" onclick="switchAdminTab('movies')">Movies</button>
+            <button class="tab-btn" onclick="switchAdminTab('theaters')">Theaters</button>
+            <button class="tab-btn" onclick="switchAdminTab('screens')">Screens</button>
+            <button class="tab-btn" onclick="switchAdminTab('seats')">Seats</button>
+            <button class="tab-btn" onclick="switchAdminTab('shows')">Shows</button>
+            <button class="tab-btn" onclick="switchAdminTab('food')">Food Items</button>
+            <button class="tab-btn" onclick="switchAdminTab('movie-bookings')" style="border-color:var(--primary);">🎟️ Movie Bookings</button>
+            <button class="tab-btn" onclick="switchAdminTab('food-orders')" style="border-color:var(--warning);">🍿 Food Orders</button>
+        </div>
+
+        <!-- CITIES TAB -->
+        <div id="tab-cities" class="admin-section active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>City Management</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-city-modal')">+ Add City</button>
+            </div>
+            <div id="cities-table"></div>
+        </div>
+
+        <!-- MOVIES TAB -->
+        <div id="tab-movies" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Movie Management</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-movie-modal')">+ Add Movie</button>
+            </div>
+            <div id="movies-table"></div>
+        </div>
+
+        <!-- THEATERS TAB -->
+        <div id="tab-theaters" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Theater Management</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-theater-modal')">+ Add Theater</button>
+            </div>
+            <div id="theaters-table"></div>
+        </div>
+
+        <!-- SCREENS TAB -->
+        <div id="tab-screens" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Screen Management</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-screen-modal')">+ Add Screen</button>
+            </div>
+            <div id="screens-table"></div>
+        </div>
+
+        <!-- SEATS TAB -->
+        <div id="tab-seats" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Seat Configuration</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-seat-modal')">+ Add Seat</button>
+            </div>
+            <div class="form-group" style="max-width:300px;">
+                <label>Filter by Screen</label>
+                <select id="seat-screen-filter" onchange="loadSeatsForScreen()"></select>
+            </div>
+            <div id="seats-table"></div>
+        </div>
+
+        <!-- SHOWS TAB -->
+        <div id="tab-shows" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Show Scheduling</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-show-modal')">+ Schedule Show</button>
+            </div>
+            <div id="shows-table"></div>
+        </div>
+
+        <!-- FOOD ITEMS TAB -->
+        <div id="tab-food" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>Food Menu Management</h3>
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-food-modal')">+ Add Snack Item</button>
+            </div>
+            <div id="food-table"></div>
+        </div>
+
+        <!-- NEW TAB: MOVIE BOOKINGS -->
+        <div id="tab-movie-bookings" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>All Ticket Bookings Across Platform</h3>
+                <button class="btn btn-outline btn-sm" onclick="loadAllMovieBookings()">🔄 Refresh</button>
+            </div>
+            <div id="movie-bookings-table"></div>
+        </div>
+
+        <!-- NEW TAB: FOOD ORDERS -->
+        <div id="tab-food-orders" class="admin-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3>All Food & Beverage Delivery Orders</h3>
+                <button class="btn btn-outline btn-sm" onclick="loadAllFoodOrders()">🔄 Refresh</button>
+            </div>
+            <div id="food-orders-table"></div>
+        </div>
+    </div>
+
+    <!-- ADD CITY MODAL -->
+    <div class="modal-overlay" id="add-city-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-city-modal')">&times;</button>
+            <h2>Add City</h2>
+            <form onsubmit="handleAddCity(event)">
+                <div class="form-group"><label>City Name</label><input type="text" id="city-name" required></div>
+                <div class="form-group"><label>State</label><input type="text" id="city-state" required></div>
+                <button class="btn btn-primary btn-block">Save City</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD MOVIE MODAL -->
+    <div class="modal-overlay" id="add-movie-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-movie-modal')">&times;</button>
+            <h2>Add Movie</h2>
+            <form onsubmit="handleAddMovie(event)">
+                <div class="form-group"><label>Title</label><input type="text" id="m-title" required></div>
+                <div class="form-group"><label>Genre</label><input type="text" id="m-genre" placeholder="Action, Drama" required></div>
+                <div class="form-group"><label>Language</label><input type="text" id="m-lang" placeholder="English, Hindi" required></div>
+                <div class="form-group"><label>Duration (mins)</label><input type="number" id="m-dur" required></div>
+                <div class="form-group"><label>Rating</label><input type="number" step="0.1" id="m-rating" required></div>
+                <div class="form-group"><label>Release Date</label><input type="date" id="m-date" required></div>
+                <div class="form-group"><label>Poster URL</label><input type="url" id="m-poster" required></div>
+                <div class="form-group"><label>Description</label><textarea id="m-desc" rows="3" required></textarea></div>
+                <button class="btn btn-primary btn-block">Save Movie</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD THEATER MODAL -->
+    <div class="modal-overlay" id="add-theater-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-theater-modal')">&times;</button>
+            <h2>Add Theater</h2>
+            <form onsubmit="handleAddTheater(event)">
+                <div class="form-group"><label>Theater Name</label><input type="text" id="t-name" required></div>
+                <div class="form-group"><label>Address</label><input type="text" id="t-addr" required></div>
+                <div class="form-group"><label>City</label><select id="t-city" required></select></div>
+                <button class="btn btn-primary btn-block">Save Theater</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD SCREEN MODAL -->
+    <div class="modal-overlay" id="add-screen-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-screen-modal')">&times;</button>
+            <h2>Add Screen</h2>
+            <form onsubmit="handleAddScreen(event)">
+                <div class="form-group"><label>Theater</label><select id="s-theater" required></select></div>
+                <div class="form-group"><label>Screen Name</label><input type="text" id="s-name" placeholder="Audi 1, IMAX Screen" required></div>
+                <div class="form-group"><label>Total Seats</label><input type="number" id="s-seats" required></div>
+                <button class="btn btn-primary btn-block">Save Screen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD SEAT MODAL -->
+    <div class="modal-overlay" id="add-seat-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-seat-modal')">&times;</button>
+            <h2>Add Seat</h2>
+            <form onsubmit="handleAddSeat(event)">
+                <div class="form-group"><label>Screen</label><select id="seat-screen-select" required></select></div>
+                <div class="form-group"><label>Seat Number</label><input type="text" id="seat-num" placeholder="A1" required></div>
+                <div class="form-group"><label>Row</label><input type="text" id="seat-row" placeholder="A" required></div>
+                <div class="form-group"><label>Column</label><input type="number" id="seat-col" placeholder="1" required></div>
+                <div class="form-group"><label>Type</label>
+                    <select id="seat-type">
+                        <option value="REGULAR">REGULAR</option>
+                        <option value="PREMIUM">PREMIUM</option>
+                        <option value="RECLINER">RECLINER</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-block">Save Seat</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD SHOW MODAL -->
+    <div class="modal-overlay" id="add-show-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-show-modal')">&times;</button>
+            <h2>Schedule Show</h2>
+            <form onsubmit="handleAddShow(event)">
+                <div class="form-group"><label>Movie</label><select id="show-movie" required></select></div>
+                <div class="form-group"><label>Screen</label><select id="show-screen" required></select></div>
+                <div class="form-group"><label>Date</label><input type="date" id="show-date" required></div>
+                <div class="form-group"><label>Start Time</label><input type="time" id="show-start" required></div>
+                <div class="form-group"><label>End Time</label><input type="time" id="show-end" required></div>
+                <div class="form-group"><label>Ticket Price (₹)</label><input type="number" id="show-price" required></div>
+                <button class="btn btn-primary btn-block">Save Show</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD FOOD MODAL -->
+    <div class="modal-overlay" id="add-food-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('add-food-modal')">&times;</button>
+            <h2>Add Snack Item</h2>
+            <form onsubmit="handleAddFood(event)">
+                <div class="form-group"><label>Item Name</label><input type="text" id="f-name" required></div>
+                <div class="form-group"><label>Category</label><input type="text" id="f-cat" placeholder="Popcorn, Beverage, Combos" required></div>
+                <div class="form-group"><label>Price (₹)</label><input type="number" id="f-price" required></div>
+                <div class="form-group"><label>Image URL</label><input type="url" id="f-img" required></div>
+                <div class="form-group"><label>Description</label><textarea id="f-desc" rows="2"></textarea></div>
+                <button class="btn btn-primary btn-block">Save Snack</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+        // 1. ROUTE GUARD: Enforce Admin Role Access
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getLoggedInUser();
+            if (!user || user.role !== 'ADMIN') {
+                showToast('Access denied: Admins only!', 'error');
+                setTimeout(() => window.location.href = '../index.html', 1000);
+                return;
+            }
+            initAdminDashboard();
+        });
+
+        function switchAdminTab(tabKey) {
+            document.querySelectorAll('.admin-nav .tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+
+            const targetBtn = Array.from(document.querySelectorAll('.admin-nav .tab-btn'))
+                .find(b => b.getAttribute('onclick').includes(tabKey));
+            if (targetBtn) targetBtn.classList.add('active');
+
+            const targetSection = document.getElementById(`tab-${tabKey}`);
+            if (targetSection) targetSection.classList.add('active');
+
+            if (tabKey === 'movie-bookings') loadAllMovieBookings();
+            if (tabKey === 'food-orders') loadAllFoodOrders();
+        }
+
+        async function initAdminDashboard() {
+            await Promise.all([
+                loadCities(),
+                loadMovies(),
+                loadTheaters(),
+                loadScreens(),
+                loadShows(),
+                loadFood()
+            ]);
+        }
+
+        // ================= NEW TAB 1: MOVIE BOOKINGS =================
+        async function loadAllMovieBookings() {
+            const tableDiv = document.getElementById('movie-bookings-table');
+            showLoading('movie-bookings-table');
+            try {
+                const bookings = await BookingAPI.getAll();
+                if (!bookings || bookings.length === 0) {
+                    tableDiv.innerHTML = '<div class="empty-state"><p>No movie bookings placed yet</p></div>';
+                    return;
+                }
+
+                let html = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Customer</th>
+                                <th>Movie</th>
+                                <th>Theater & Audi</th>
+                                <th>Show Timing</th>
+                                <th>Seats</th>
+                                <th>Total (₹)</th>
+                                <th>Status</th>
+                                <th>Booked At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                bookings.forEach(b => {
+                    const seatNumbers = (b.seats || []).map(s => s.seatNumber).join(', ');
+                    const statusColor = b.status === 'CONFIRMED' ? 'var(--success)' : 'var(--danger)';
+                    const bookedTime = b.bookedAt ? new Date(b.bookedAt).toLocaleString() : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td><strong>#${b.id}</strong></td>
+                            <td>
+                                <div><strong>${b.user?.name || 'Customer'}</strong></div>
+                                <small style="color:var(--text-muted);">${b.user?.email || ''}</small>
+                            </td>
+                            <td>${b.show?.movie?.title || 'Movie'}</td>
+                            <td>${b.show?.screen?.theater?.name || 'Theater'} (${b.show?.screen?.name || ''})</td>
+                            <td>${b.show?.showDate || ''} ${b.show?.startTime || ''}</td>
+                            <td><span class="badge" style="background:rgba(255,255,255,0.1);">${seatNumbers || 'None'}</span></td>
+                            <td><strong>₹${b.totalPrice || 0}</strong></td>
+                            <td><span style="color:${statusColor}; font-weight:700;">${b.status}</span></td>
+                            <td><small style="color:var(--text-muted);">${bookedTime}</small></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                tableDiv.innerHTML = html;
+            } catch (e) {
+                tableDiv.innerHTML = '<div class="empty-state"><p>Error loading movie bookings</p></div>';
+            }
+        }
+
+        // ================= NEW TAB 2: FOOD ORDERS =================
+        async function loadAllFoodOrders() {
+    const tableDiv = document.getElementById('food-orders-table');
+    showLoading('food-orders-table');
+    try {
+        const orders = await FoodAPII.getAllOrders();
+        if (!orders || orders.length === 0) {
+            tableDiv.innerHTML = '<div class="empty-state"><p>No food orders placed yet</p></div>';
+            return;
+        }
+
+        let html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Booking ID</th>
+                        <th>Delivery Seat</th>
+                        <th>Delivery Timing</th>
+                        <th>Items Ordered</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Order Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        orders.forEach(o => {
+            const itemsStr = (o.items || []).map(i => `${i.foodItem?.name || 'Item'} (x${i.quantity})`).join(', ');
+            const orderDate = o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A';
+
+            html += `
+                <tr>
+                    <td><strong>#${o.id}</strong></td>
+                    <td>
+                        <div><strong>${o.user?.name || 'User'}</strong></div>
+                        <small style="color:var(--text-muted);">${o.user?.email || ''}</small>
+                    </td>
+                    <td>#${o.booking?.id || 'N/A'}</td>
+                    <td><span class="badge" style="background:rgba(52,152,219,0.2);color:#3498db;">${o.seatNumber}</span></td>
+                    <td><strong style="color:var(--warning);">${o.deliveryTime || 'In 20 mins'}</strong></td>
+                    <td>${itemsStr || 'None'}</td>
+                    <td><strong style="color:var(--success);">₹${o.totalAmount || 0}</strong></td>
+                    <td><span class="badge" style="background:rgba(46,204,113,0.2);color:var(--success);">${o.status || 'CONFIRMED'}</span></td>
+                    <td><small style="color:var(--text-muted);">${orderDate}</small></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        tableDiv.innerHTML = html;
+    } catch (e) {
+        console.error("Food orders error:", e);
+        tableDiv.innerHTML = `<div class="empty-state"><p style="color:var(--danger)">Error: ${e.message || 'Error loading food orders'}</p></div>`;
+    }
+}
+
+        // ================= CRUD: CITIES =================
+        async function loadCities() {
+            const cities = await CityAPI.getAll();
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>City</th><th>State</th><th>Actions</th></tr></thead><tbody>';
+            cities.forEach(c => html += `<tr><td>${c.id}</td><td>${c.name}</td><td>${c.state || ''}</td><td><button class="btn btn-sm btn-danger" onclick="deleteCity(${c.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('cities-table').innerHTML = cities.length ? html : '<div class="empty-state"><p>No cities added</p></div>';
+            const cityOpts = '<option value="">Select City</option>' + cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            document.getElementById('t-city').innerHTML = cityOpts;
+        }
+
+        async function handleAddCity(e) {
+            e.preventDefault();
+            await CityAPI.add({ name: document.getElementById('city-name').value, state: document.getElementById('city-state').value });
+            showToast('City added', 'success');
+            closeModal('add-city-modal');
+            loadCities();
+        }
+
+        async function deleteCity(id) {
+            if (!confirm('Delete city?')) return;
+            await CityAPI.delete(id);
+            showToast('City deleted', 'success');
+            loadCities();
+        }
+
+        // ================= CRUD: MOVIES =================
+        async function loadMovies() {
+            const movies = await MovieAPI.getAll();
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Genre</th><th>Language</th><th>Duration</th><th>Rating</th><th>Actions</th></tr></thead><tbody>';
+            movies.forEach(m => html += `<tr><td>${m.id}</td><td>${m.title}</td><td>${m.genre}</td><td>${m.language}</td><td>${m.durationMinutes}m</td><td>★ ${m.rating}</td><td><button class="btn btn-sm btn-danger" onclick="deleteMovie(${m.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('movies-table').innerHTML = movies.length ? html : '<div class="empty-state"><p>No movies added</p></div>';
+            document.getElementById('show-movie').innerHTML = '<option value="">Select Movie</option>' + movies.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
+        }
+
+        async function handleAddMovie(e) {
+            e.preventDefault();
+            await MovieAPI.add({
+                title: document.getElementById('m-title').value,
+                genre: document.getElementById('m-genre').value,
+                language: document.getElementById('m-lang').value,
+                durationMinutes: parseInt(document.getElementById('m-dur').value),
+                rating: parseFloat(document.getElementById('m-rating').value),
+                releaseDate: document.getElementById('m-date').value,
+                posterUrl: document.getElementById('m-poster').value,
+                description: document.getElementById('m-desc').value
+            });
+            showToast('Movie added', 'success');
+            closeModal('add-movie-modal');
+            loadMovies();
+        }
+
+        async function deleteMovie(id) {
+            if (!confirm('Delete movie?')) return;
+            await MovieAPI.delete(id);
+            showToast('Movie deleted', 'success');
+            loadMovies();
+        }
+
+        // ================= CRUD: THEATERS =================
+        async function loadTheaters() {
+            const theaters = await TheaterAPI.getAll();
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>Theater</th><th>Address</th><th>City</th><th>Actions</th></tr></thead><tbody>';
+            theaters.forEach(t => html += `<tr><td>${t.id}</td><td>${t.name}</td><td>${t.address || ''}</td><td>${t.city?.name || ''}</td><td><button class="btn btn-sm btn-danger" onclick="deleteTheater(${t.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('theaters-table').innerHTML = theaters.length ? html : '<div class="empty-state"><p>No theaters added</p></div>';
+            document.getElementById('s-theater').innerHTML = '<option value="">Select Theater</option>' + theaters.map(t => `<option value="${t.id}">${t.name} (${t.city?.name || ''})</option>`).join('');
+        }
+
+        async function handleAddTheater(e) {
+            e.preventDefault();
+            await TheaterAPI.add({
+                name: document.getElementById('t-name').value,
+                address: document.getElementById('t-addr').value,
+                cityId: parseInt(document.getElementById('t-city').value)
+            });
+            showToast('Theater added', 'success');
+            closeModal('add-theater-modal');
+            loadTheaters();
+        }
+
+        async function deleteTheater(id) {
+            if (!confirm('Delete theater?')) return;
+            await TheaterAPI.delete(id);
+            showToast('Theater deleted', 'success');
+            loadTheaters();
+        }
+
+        // ================= CRUD: SCREENS =================
+        async function loadScreens() {
+            const screens = await ScreenAPI.getAll();
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>Screen</th><th>Seats</th><th>Theater</th><th>Actions</th></tr></thead><tbody>';
+            screens.forEach(s => html += `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.totalSeats}</td><td>${s.theater?.name || ''}</td><td><button class="btn btn-sm btn-danger" onclick="deleteScreen(${s.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('screens-table').innerHTML = screens.length ? html : '<div class="empty-state"><p>No screens added</p></div>';
+
+            const opts = '<option value="">Select Screen</option>' + screens.map(s => `<option value="${s.id}">${s.name} — ${s.theater?.name || ''}</option>`).join('');
+            document.getElementById('seat-screen-filter').innerHTML = opts;
+            document.getElementById('seat-screen-select').innerHTML = opts;
+            document.getElementById('show-screen').innerHTML = opts;
+        }
+
+        async function handleAddScreen(e) {
+            e.preventDefault();
+            await ScreenAPI.add({
+                theaterId: parseInt(document.getElementById('s-theater').value),
+                name: document.getElementById('s-name').value,
+                totalSeats: parseInt(document.getElementById('s-seats').value)
+            });
+            showToast('Screen added', 'success');
+            closeModal('add-screen-modal');
+            loadScreens();
+        }
+
+        async function deleteScreen(id) {
+            if (!confirm('Delete screen?')) return;
+            await ScreenAPI.delete(id);
+            showToast('Screen deleted', 'success');
+            loadScreens();
+        }
+
+        // ================= CRUD: SEATS =================
+        async function loadSeatsForScreen() {
+            const screenId = document.getElementById('seat-screen-filter').value;
+            if (!screenId) { document.getElementById('seats-table').innerHTML = ''; return; }
+            const seats = await SeatAPI.getByScreen(screenId);
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>Seat Number</th><th>Row</th><th>Col</th><th>Type</th><th>Actions</th></tr></thead><tbody>';
+            seats.forEach(s => html += `<tr><td>${s.id}</td><td>${s.seatNumber}</td><td>${s.row}</td><td>${s.col}</td><td>${s.seatType}</td><td><button class="btn btn-sm btn-danger" onclick="deleteSeat(${s.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('seats-table').innerHTML = seats.length ? html : '<div class="empty-state"><p>No seats added for this screen</p></div>';
+        }
+
+        async function handleAddSeat(e) {
+            e.preventDefault();
+            await SeatAPI.add({
+                screenId: parseInt(document.getElementById('seat-screen-select').value),
+                seatNumber: document.getElementById('seat-num').value,
+                row: document.getElementById('seat-row').value,
+                col: parseInt(document.getElementById('seat-col').value),
+                seatType: document.getElementById('seat-type').value
+            });
+            showToast('Seat added', 'success');
+            closeModal('add-seat-modal');
+            loadSeatsForScreen();
+        }
+
+        async function deleteSeat(id) {
+            if (!confirm('Delete seat?')) return;
+            await SeatAPI.delete(id);
+            showToast('Seat deleted', 'success');
+            loadSeatsForScreen();
+        }
+
+        // ================= CRUD: SHOWS =================
+        async function loadShows() {
+            const shows = await ShowAPI.getAll();
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>Movie</th><th>Screen</th><th>Date</th><th>Timing</th><th>Price</th><th>Actions</th></tr></thead><tbody>';
+            shows.forEach(s => html += `<tr><td>${s.id}</td><td>${s.movie?.title}</td><td>${s.screen?.name} (${s.screen?.theater?.name})</td><td>${s.showDate}</td><td>${s.startTime}-${s.endTime}</td><td>₹${s.ticketPrice}</td><td><button class="btn btn-sm btn-danger" onclick="deleteShow(${s.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('shows-table').innerHTML = shows.length ? html : '<div class="empty-state"><p>No shows scheduled</p></div>';
+        }
+
+        async function handleAddShow(e) {
+            e.preventDefault();
+            await ShowAPI.add({
+                movieId: parseInt(document.getElementById('show-movie').value),
+                screenId: parseInt(document.getElementById('show-screen').value),
+                showDate: document.getElementById('show-date').value,
+                startTime: document.getElementById('show-start').value,
+                endTime: document.getElementById('show-end').value,
+                ticketPrice: parseFloat(document.getElementById('show-price').value)
+            });
+            showToast('Show scheduled', 'success');
+            closeModal('add-show-modal');
+            loadShows();
+        }
+
+        async function deleteShow(id) {
+            if (!confirm('Delete show?')) return;
+            await ShowAPI.delete(id);
+            showToast('Show deleted', 'success');
+            loadShows();
+        }
+
+        // ================= CRUD: FOOD MENU =================
+        async function loadFood() {
+            const items = await FoodAPI.getAllItems();
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>Item</th><th>Category</th><th>Price</th><th>Actions</th></tr></thead><tbody>';
+            items.forEach(f => html += `<tr><td>${f.id}</td><td>${f.name}</td><td>${f.category}</td><td>₹${f.price}</td><td><button class="btn btn-sm btn-danger" onclick="deleteFood(${f.id})">Delete</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('food-table').innerHTML = items.length ? html : '<div class="empty-state"><p>No food items added</p></div>';
+        }
+
+        async function handleAddFood(e) {
+            e.preventDefault();
+            await FoodAPI.addItem({
+                name: document.getElementById('f-name').value,
+                category: document.getElementById('f-cat').value,
+                price: parseFloat(document.getElementById('f-price').value),
+                imageUrl: document.getElementById('f-img').value,
+                description: document.getElementById('f-desc').value,
+                available: true
+            });
+            showToast('Snack added', 'success');
+            closeModal('add-food-modal');
+            loadFood();
+        }
+
+        async function deleteFood(id) {
+            if (!confirm('Delete food item?')) return;
+            await FoodAPI.deleteItem(id);
+            showToast('Snack deleted', 'success');
+            loadFood();
+        }
+    </script>
+</body>
+</html>

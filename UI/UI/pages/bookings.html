@@ -1,0 +1,608 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - BookMyShow</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="../index.html" class="logo">Cine😋<span>Bite</span></a>
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="movies.html">Movies</a>
+            <a href="theaters.html">Theaters</a>
+            <a href="food.html" class="food-nav-link" style="display:none;">Food & Snacks</a>
+            <a href="bookings.html" class="active">My Bookings</a>
+        </div>
+        <div class="nav-user" id="nav-user"></div>
+    </nav>
+
+    <div class="container">
+        <h2 class="section-title">My Bookings</h2>
+        <div id="bookings-list" style="display:flex; flex-direction:column; gap:1rem;"></div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+        async function loadBookings() {
+            const user = getLoggedInUser();
+            if (!user) {
+                document.getElementById('bookings-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔐</div>
+                        <p>Please <a href="login.html" style="color:var(--primary);font-weight:700;">login</a> to view your bookings.</p>
+                    </div>`;
+                return;
+            }
+
+            showLoading('bookings-list');
+            try {
+                const bookings = await BookingAPI.getByUser(user.id);
+                if (bookings.length === 0) {
+                    showEmpty('bookings-list', 'No bookings yet. Go book some movies! 🎬');
+                    return;
+                }
+
+                document.getElementById('bookings-list').innerHTML = bookings.map(b => `
+                    <div class="card" style="border: ${b.status === 'CANCELLED' ? '1px solid rgba(233,69,96,0.3)' : '1px solid rgba(46,204,113,0.3)'};">
+                        <div class="card-body" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <h3 style="margin-bottom:0.3rem;">🎬 ${b.show?.movie?.title || 'Movie'}</h3>
+                                <p style="color:var(--text-muted); font-size:0.85rem;">
+                                    🏛️ ${b.show?.screen?.theater?.name || ''} — ${b.show?.screen?.name || ''}<br>
+                                    📅 ${b.show?.showDate || ''} &nbsp; 🕐 ${b.show?.startTime || ''}<br>
+                                    💺 Seats: ${b.seats ? b.seats.map(s => s.seatNumber).join(', ') : 'N/A'}<br>
+                                    🕑 Booked: ${b.bookedAt ? new Date(b.bookedAt).toLocaleString() : ''}
+                                </p>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:1.3rem; font-weight:700; color:${b.status === 'CANCELLED' ? 'var(--accent)' : 'var(--success)'};">
+                                    ₹${b.totalPrice || 0}
+                                </div>
+                                <span class="badge" style="background:${b.status === 'CANCELLED' ? 'rgba(233,69,96,0.2);color:var(--accent)' : 'rgba(46,204,113,0.2);color:var(--success)'};">
+                                    ${b.status}
+                                </span>
+                                ${b.status === 'CONFIRMED' ? `
+                                    <br><button class="btn btn-sm btn-danger" style="margin-top:0.5rem;" onclick="cancelBooking(${b.id})">Cancel</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                showEmpty('bookings-list', 'Could not load bookings');
+            }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            try {
+                await BookingAPI.cancel(id);
+                showToast('Booking cancelled', 'success');
+                loadBookings();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        loadBookings();
+    </script>
+</body>
+</html> -->
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings & Orders - BookMyShow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        .order-badge {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .order-item-chip {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem;
+            font-size: 0.8rem;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="../index.html" class="logo">Book<span>My</span>Show</a>
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="movies.html">Movies</a>
+            <a href="theaters.html">Theaters</a>
+            <a href="food.html" class="food-nav-link" style="display:none;">Food & Snacks</a>
+            <a href="bookings.html" class="active">My Bookings</a>
+            <a href="admin.html" class="admin-nav-link">Admin</a>
+        </div>
+        <div class="nav-user" id="nav-user"></div>
+    </nav>
+
+    <div class="container">
+        <!-- TABS FOR SWITCHING -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchBookingTab('movies', this)">🎬 Movie Tickets</button>
+            <button class="tab" onclick="switchBookingTab('food', this)">🍿 Food Orders</button>
+        </div>
+
+        <!-- TAB 1: MOVIE TICKETS -->
+        <div id="tab-movies">
+            <div id="bookings-list" style="display:flex; flex-direction:column; gap:1rem;"></div>
+        </div>
+
+        <!-- TAB 2: FOOD ORDERS -->
+        <div id="tab-food" style="display:none;">
+            <div id="food-orders-list" style="display:flex; flex-direction:column; gap:1rem;"></div>
+        </div>
+    </div>
+
+    <!-- Add this modal at the bottom of bookings.html right before <script> -->
+<div class="modal-overlay" id="reschedule-modal">
+    <!-- Inside reschedule-modal in bookings.html -->
+<div id="reschedule-price-box" style="display:none; background:var(--bg-dark); padding:1rem; border-radius:8px; margin-top:1rem; border:1px solid rgba(255,255,255,0.08);">
+    <div class="summary-row"><span>Original Booking:</span><span id="resched-old-price">₹0</span></div>
+    <div class="summary-row"><span>New Show Price:</span><span id="resched-new-price">₹0</span></div>
+    <div class="summary-row" id="resched-diff-row" style="font-weight:700;">
+        <span id="resched-diff-label">Difference:</span>
+        <span id="resched-diff-amount">₹0</span>
+    </div>
+    
+    <!-- Option to use points if extra amount is needed -->
+    <div id="resched-points-opt" style="display:none; margin-top:0.5rem; border-top:1px dashed rgba(255,255,255,0.1); padding-top:0.5rem;">
+        <label style="font-size:0.85rem; cursor:pointer; color:var(--warning);">
+            <input type="checkbox" id="resched-use-points" onchange="fetchRescheduleQuote()"> Use Reward Points (<span id="resched-avail-pts">0</span> available)
+        </label>
+    </div>
+</div>
+    <div class="modal" style="max-width: 600px;">
+        <button class="modal-close" onclick="closeModal('reschedule-modal')">&times;</button>
+        <h2>Reschedule Movie</h2>
+        <p id="reschedule-info" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;"></p>
+
+        <div class="form-group">
+            <label>Select New Show Time (Same Theater)</label>
+            <select id="reschedule-show-select" onchange="onRescheduleShowChange()"></select>
+        </div>
+
+        <div id="reschedule-seat-container" style="display:none;">
+            <div class="screen-label" style="text-align:center;">SCREEN</div>
+            <div style="display:flex; justify-content:center;"><div class="screen-indicator"></div></div>
+            <div class="seat-map" id="reschedule-seat-map"></div>
+            <p style="text-align:center; font-size:0.8rem; color:var(--text-muted);">
+                Selected: <strong id="reschedule-seat-count" style="color:var(--white);">0</strong> / <span id="reschedule-seat-target">0</span> seats
+            </p>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="confirm-reschedule-btn" style="margin-top:1.5rem;" onclick="submitReschedule()" disabled>Confirm Reschedule</button>
+    </div>
+</div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+
+        
+
+        function switchBookingTab(type, btn) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (type === 'movies') {
+                document.getElementById('tab-movies').style.display = 'block';
+                document.getElementById('tab-food').style.display = 'none';
+            } else {
+                document.getElementById('tab-movies').style.display = 'none';
+                document.getElementById('tab-food').style.display = 'block';
+                loadFoodOrders();
+            }
+        }
+
+        // ===== LOAD MOVIE BOOKINGS =====
+        async function loadBookings() {
+            const user = getLoggedInUser();
+            if (!user) {
+                document.getElementById('bookings-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔐</div>
+                        <p>Please <a href="login.html" style="color:var(--primary);font-weight:700;">login</a> to view your bookings.</p>
+                    </div>`;
+                return;
+            }
+
+            showLoading('bookings-list');
+            try {
+                const bookings = await BookingAPI.getByUser(user.id);
+                if (!bookings || bookings.length === 0) {
+                    showEmpty('bookings-list', 'No movie bookings yet. Go book some movies! 🎬');
+                    return;
+                }
+
+                document.getElementById('bookings-list').innerHTML = bookings.map(b => `
+                    <div class="card" style="border: ${b.status === 'CANCELLED' ? '1px solid rgba(233,69,96,0.3)' : '1px solid rgba(46,204,113,0.3)'};">
+                        <div class="card-body" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <h3 style="margin-bottom:0.3rem;">🎬 ${b.show?.movie?.title || 'Movie'}</h3>
+                                <p style="color:var(--text-muted); font-size:0.85rem;">
+                                    🏛️ ${b.show?.screen?.theater?.name || ''} — ${b.show?.screen?.name || ''}<br>
+                                    📅 ${b.show?.showDate || ''} &nbsp; 🕐 ${b.show?.startTime || ''}<br>
+                                    💺 Seats: ${b.seats ? b.seats.map(s => s.seatNumber).join(', ') : 'N/A'}<br>
+                                    🕑 Booked: ${b.bookedAt ? new Date(b.bookedAt).toLocaleString() : ''}
+                                </p>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:1.3rem; font-weight:700; color:${b.status === 'CANCELLED' ? 'var(--accent)' : 'var(--success)'};">
+                                    ₹${b.totalPrice || 0}
+                                </div>
+                                <span class="badge" style="background:${b.status === 'CANCELLED' ? 'rgba(233,69,96,0.2);color:var(--accent)' : 'rgba(46,204,113,0.2);color:var(--success)'};">
+                                    ${b.status}
+                                </span>
+                                ${b.status === 'CONFIRMED' ? `
+                                    <div style="margin-top:0.6rem; display:flex; gap:0.5rem; justify-content:flex-end;">
+                                        <button class="btn btn-sm btn-outline" onclick='openRescheduleModal(${JSON.stringify(b)})'>🔄 Reschedule</button>
+                                        <a href="food.html?bookingId=${b.id}" class="btn btn-sm btn-outline">🍿 Order Snacks</a>
+                                        <button class="btn btn-sm btn-danger" onclick="cancelBooking(${b.id})">Cancel</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                showEmpty('bookings-list', 'Could not load bookings');
+            }
+        }
+
+        // ===== LOAD FOOD ORDERS =====
+        async function loadFoodOrders() {
+            const user = getLoggedInUser();
+            if (!user) return;
+
+            showLoading('food-orders-list');
+            try {
+                const orders = await FoodAPI.getOrdersByUser(user.id);
+                if (!orders || orders.length === 0) {
+                    showEmpty('food-orders-list', 'No food orders placed yet. 🍿');
+                    return;
+                }
+
+                document.getElementById('food-orders-list').innerHTML = orders.map(o => {
+                    const show = o.booking?.show || {};
+                    const theater = show.screen?.theater?.name || 'Cinema';
+                    const screen = show.screen?.name || 'Screen';
+                    const movie = show.movie?.title || 'Movie';
+
+                    const itemsList = (o.items || []).map(i => `
+                        <span class="order-item-chip">
+                            ${i.foodItem?.name || 'Snack'} <strong>× ${i.quantity}</strong> (₹${i.price * i.quantity})
+                        </span>
+                    `).join('');
+
+                    return `
+                        <div class="card" style="border: 1px solid rgba(233, 69, 96, 0.3);">
+                            <div class="card-body" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                                <div style="flex:1; min-width:250px;">
+                                    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.4rem;">
+                                        <h3 style="margin:0;">🍿 Order #${o.id}</h3>
+                                        <span class="order-badge">Seat: ${o.seatNumber}</span>
+                                    </div>
+                                    <p style="color:var(--text-muted); font-size:0.85rem; line-height:1.6;">
+                                        🎬 <strong>${movie}</strong> — ${theater} (${screen})<br>
+                                        ⏰ Delivery Slot: <strong style="color:var(--white);">${o.deliveryTime}</strong><br>
+                                        🕑 Ordered on: ${o.orderedAt ? new Date(o.orderedAt).toLocaleString() : ''}
+                                    </p>
+                                    <div style="margin-top:0.6rem;">
+                                        ${itemsList}
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:1.3rem; font-weight:700; color:var(--success);">
+                                        ₹${o.totalAmount || 0}
+                                    </div>
+                                    <span class="badge" style="background:rgba(46,204,113,0.2);color:var(--success);">
+                                        ${o.status || 'CONFIRMED'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                showEmpty('food-orders-list', 'Could not load food orders');
+            }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            try {
+                await BookingAPI.cancel(id);
+                showToast('Booking cancelled', 'success');
+                loadBookings();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+let currentRescheduleBooking = null;
+let rescheduleSelectedSeats = [];
+let targetSeatCount = 0;
+let currentQuote = null;
+
+async function openRescheduleModal(booking) {
+    currentRescheduleBooking = booking;
+    targetSeatCount = booking.seats ? booking.seats.length : 1;
+    rescheduleSelectedSeats = [];
+    currentQuote = null;
+
+    const movieTitle = booking.show?.movie?.title || 'Movie';
+    const theaterName = booking.show?.screen?.theater?.name || 'Theater';
+    const theaterId = booking.show?.screen?.theater?.id;
+
+    document.getElementById('reschedule-info').textContent = 
+        `Original: ${movieTitle} at ${theaterName}. You must pick exactly ${targetSeatCount} seat(s).`;
+    document.getElementById('reschedule-seat-target').textContent = targetSeatCount;
+    document.getElementById('reschedule-seat-count').textContent = '0';
+    document.getElementById('confirm-reschedule-btn').disabled = true;
+    document.getElementById('reschedule-price-box').style.display = 'none';
+
+    try {
+        const shows = await ShowAPI.getByMovie(booking.show.movie.id);
+        const availableShows = shows.filter(s => 
+            s.id !== booking.show.id && 
+            s.screen?.theater?.id === theaterId
+        );
+
+        const selectEl = document.getElementById('reschedule-show-select');
+        if (availableShows.length === 0) {
+            selectEl.innerHTML = '<option value="">No other shows available at this theater</option>';
+            document.getElementById('reschedule-seat-container').style.display = 'none';
+        } else {
+            selectEl.innerHTML = '<option value="">-- Choose New Show Time --</option>' + 
+                availableShows.map(s => `
+                    <option value="${s.id}" data-screen="${s.screen?.id}">${s.showDate} at ${s.startTime} (${s.screen?.name}) - ₹${s.ticketPrice}</option>
+                `).join('');
+            document.getElementById('reschedule-seat-container').style.display = 'none';
+        }
+
+        openModal('reschedule-modal');
+    } catch (e) {
+        showToast('Could not load alternate shows', 'error');
+    }
+}
+
+async function onRescheduleShowChange() {
+    const showSelect = document.getElementById('reschedule-show-select');
+    const showId = showSelect.value;
+    const selectedOption = showSelect.options[showSelect.selectedIndex];
+    const screenId = selectedOption?.getAttribute('data-screen');
+
+    rescheduleSelectedSeats = [];
+    currentQuote = null;
+    document.getElementById('reschedule-seat-count').textContent = '0';
+    document.getElementById('confirm-reschedule-btn').disabled = true;
+    document.getElementById('reschedule-price-box').style.display = 'none';
+
+    if (!showId || !screenId) {
+        document.getElementById('reschedule-seat-container').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('reschedule-seat-container').style.display = 'block';
+    showLoading('reschedule-seat-map');
+
+    try {
+        const [allSeats, availableSeats] = await Promise.all([
+            SeatAPI.getByScreen(screenId),
+            BookingAPI.getAvailableSeats(showId)
+        ]);
+        const availableIds = availableSeats.map(s => s.id);
+
+        const rows = {};
+        allSeats.forEach(seat => {
+            const r = seat.row || seat.seatNumber?.charAt(0) || '?';
+            if (!rows[r]) rows[r] = [];
+            rows[r].push(seat);
+        });
+
+        const mapEl = document.getElementById('reschedule-seat-map');
+        mapEl.innerHTML = '';
+
+        Object.keys(rows).sort().forEach(row => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'seat-row';
+            rowDiv.innerHTML = `<div class="seat-row-label">${row}</div>`;
+
+            rows[row].sort((a, b) => (a.col || 0) - (b.col || 0)).forEach(seat => {
+                const isAvail = availableIds.includes(seat.id);
+                const seatDiv = document.createElement('div');
+                seatDiv.className = `seat ${isAvail ? 'available' : 'booked'}`;
+                seatDiv.textContent = seat.col || seat.seatNumber;
+                
+                if (isAvail) {
+                    seatDiv.onclick = () => toggleRescheduleSeat(seatDiv, seat.id);
+                }
+                rowDiv.appendChild(seatDiv);
+            });
+            mapEl.appendChild(rowDiv);
+        });
+    } catch (e) {
+        document.getElementById('reschedule-seat-map').innerHTML = '<div class="empty-state"><p>Could not load seats</p></div>';
+    }
+}
+
+function toggleRescheduleSeat(el, seatId) {
+    const idx = rescheduleSelectedSeats.indexOf(seatId);
+    if (idx > -1) {
+        rescheduleSelectedSeats.splice(idx, 1);
+        el.classList.remove('selected');
+        el.classList.add('available');
+    } else {
+        if (rescheduleSelectedSeats.length >= targetSeatCount) {
+            showToast(`You can only select ${targetSeatCount} seat(s)`, 'warning');
+            return;
+        }
+        rescheduleSelectedSeats.push(seatId);
+        el.classList.remove('available');
+        el.classList.add('selected');
+    }
+
+    document.getElementById('reschedule-seat-count').textContent = rescheduleSelectedSeats.length;
+
+    // Check if target seats count is met
+    if (rescheduleSelectedSeats.length === targetSeatCount) {
+        fetchRescheduleQuote();
+    } else {
+        document.getElementById('reschedule-price-box').style.display = 'none';
+        document.getElementById('confirm-reschedule-btn').disabled = true;
+    }
+}
+
+async function fetchRescheduleQuote() {
+    const showId = document.getElementById('reschedule-show-select').value;
+    const usePoints = document.getElementById('resched-use-points')?.checked || false;
+
+    if (!showId || rescheduleSelectedSeats.length !== targetSeatCount) return;
+
+    try {
+        currentQuote = await PaymentAPI.getRescheduleQuote(
+            currentRescheduleBooking.id,
+            showId,
+            targetSeatCount,
+            usePoints
+        );
+
+        const box = document.getElementById('reschedule-price-box');
+        box.style.display = 'block';
+
+        document.getElementById('resched-old-price').textContent = `₹${currentQuote.oldTotal}`;
+        document.getElementById('resched-new-price').textContent = `₹${currentQuote.newTotal}`;
+
+        const diffRow = document.getElementById('resched-diff-row');
+        const diffLabel = document.getElementById('resched-diff-label');
+        const diffAmount = document.getElementById('resched-diff-amount');
+        const pointsOpt = document.getElementById('resched-points-opt');
+        const confirmBtn = document.getElementById('confirm-reschedule-btn');
+
+        if (currentQuote.difference > 0) {
+            diffLabel.textContent = "Extra Payable:";
+            diffAmount.textContent = `+ ₹${Math.round(currentQuote.amountToPayInPaise / 100)}`;
+            diffRow.style.color = "var(--accent)";
+            pointsOpt.style.display = currentQuote.userRewardPoints > 0 ? 'block' : 'none';
+            document.getElementById('resched-avail-pts').textContent = currentQuote.userRewardPoints;
+            confirmBtn.textContent = currentQuote.amountToPayInPaise > 0 ? "Pay Difference & Reschedule" : "Confirm Reschedule";
+        } else if (currentQuote.difference < 0) {
+            diffLabel.textContent = "Refund to Points:";
+            diffAmount.textContent = `+ ${Math.abs(currentQuote.difference)} pts`;
+            diffRow.style.color = "var(--success)";
+            pointsOpt.style.display = 'none';
+            confirmBtn.textContent = "Confirm & Credit Points";
+        } else {
+            diffLabel.textContent = "Difference:";
+            diffAmount.textContent = "₹0 (Even Swap)";
+            diffRow.style.color = "var(--text-muted)";
+            pointsOpt.style.display = 'none';
+            confirmBtn.textContent = "Confirm Reschedule";
+        }
+
+        confirmBtn.disabled = false;
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function submitReschedule() {
+    const showId = document.getElementById('reschedule-show-select').value;
+    const usePoints = document.getElementById('resched-use-points')?.checked || false;
+    const user = getLoggedInUser();
+
+    // Scenario 1: New show is more expensive & extra payment is required
+    if (currentQuote && currentQuote.amountToPayInPaise > 0) {
+        const options = {
+            key: currentQuote.keyId,
+            amount: currentQuote.amountToPayInPaise,
+            currency: "INR",
+            name: "BookMyShow",
+            description: "Show Rescheduling Price Difference",
+            order_id: currentQuote.razorpayOrderId,
+            handler: async function (response) {
+                executeRescheduleRequest({
+                    newShowId: parseInt(showId),
+                    newSeatIds: rescheduleSelectedSeats,
+                    useRewardPoints: usePoints,
+                    razorpayOrderId: response.razorpay_order_id,
+                    razorpayPaymentId: response.razorpay_payment_id,
+                    razorpaySignature: response.razorpay_signature
+                });
+            },
+            prefill: {
+                name: user?.name || "",
+                email: user?.email || "",
+                contact: user?.phone || ""
+            },
+            theme: { color: "#e23744" }
+        };
+        const rzp = new Razorpay(options);
+        rzp.open();
+        return;
+    }
+
+    // Scenario 2: Same price, covered by points, or refund to points
+    executeRescheduleRequest({
+        newShowId: parseInt(showId),
+        newSeatIds: rescheduleSelectedSeats,
+        useRewardPoints: usePoints
+    });
+}
+
+async function executeRescheduleRequest(payload) {
+    const btn = document.getElementById('confirm-reschedule-btn');
+    btn.disabled = true;
+    btn.textContent = 'Rescheduling...';
+
+    try {
+        await BookingAPI.reschedule(currentRescheduleBooking.id, payload);
+        showToast('🎉 Reschedule completed successfully!', 'success');
+        closeModal('reschedule-modal');
+
+        // Refresh user in local storage to keep reward points in sync
+        const user = getLoggedInUser();
+        if (user) {
+            try {
+                const freshUser = await UserAPI.getById(user.id);
+                setLoggedInUser(freshUser);
+            } catch (err) {}
+        }
+
+        loadBookings();
+    } catch (e) {
+        showToast(e.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Confirm Reschedule';
+    }
+}
+
+        loadBookings();
+    </script>
+</body>
+</html>
